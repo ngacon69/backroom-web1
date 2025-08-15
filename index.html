@@ -110,8 +110,8 @@
 </div>
 
 <footer>&copy; Create by Ngacon | Tất cả các thực thể dị thường đều được chào đón</footer>
-
 <script>
+// Check login status
 const username = localStorage.getItem('backroom_username');
 if (!username) {
   window.location.href = 'login.html';
@@ -143,25 +143,35 @@ const cancelCommentBtn = document.getElementById('cancel-comment');
 let currentTab = 'Level';
 let currentType = null;
 let currentCommentItemIndex = null;
+
+// Data
 let data = { Level: [], Entity: [], Other: [] };
 
-// Lấy dữ liệu từ server
-async function fetchData() {
+// Load data from server
+async function loadData() {
+  try {
     const res = await fetch('/api/data');
     data = await res.json();
     renderContent(currentTab);
+  } catch (err) {
+    console.error("Lỗi load dữ liệu từ server:", err);
+  }
 }
 
-// Lưu dữ liệu lên server
+// Save data to server
 async function saveData() {
+  try {
     await fetch('/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
+  } catch (err) {
+    console.error("Lỗi lưu dữ liệu lên server:", err);
+  }
 }
 
-// Hiển thị nội dung
+// Render content (giữ nguyên hoàn toàn script cũ)
 function renderContent(tab){
     currentTab = tab;
     contentDisplay.innerHTML = '';
@@ -229,6 +239,9 @@ function renderContent(tab){
         });
     });
 }
+
+// Dropdown, click outside, choose type, save item, submit comment, cancel comment
+// Giữ nguyên hoàn toàn code cũ, chỉ thay saveData() bằng async saveData()
 
 createBtn.addEventListener('click',(e)=>{
     e.stopPropagation();
@@ -304,7 +317,8 @@ sidebarButtons.forEach(btn=>{
   }); 
 });
 
-fetchData();
+// Load server data on page load
+loadData();
 </script>
 </body>
 </html>
