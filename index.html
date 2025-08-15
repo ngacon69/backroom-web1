@@ -112,7 +112,6 @@
 <footer>&copy; Create by Ngacon | Tất cả các thực thể dị thường đều được chào đón</footer>
 
 <script>
-// Check login status
 const username = localStorage.getItem('backroom_username');
 if (!username) {
   window.location.href = 'login.html';
@@ -121,7 +120,6 @@ if (!username) {
   document.getElementById('username-display').textContent = username;
 }
 
-// Logout
 document.getElementById('logout-btn').addEventListener('click', () => {
   localStorage.removeItem('backroom_username');
   window.location.href = 'login.html';
@@ -145,29 +143,25 @@ const cancelCommentBtn = document.getElementById('cancel-comment');
 let currentTab = 'Level';
 let currentType = null;
 let currentCommentItemIndex = null;
+let data = { Level: [], Entity: [], Other: [] };
 
-// Data
-const data = JSON.parse(localStorage.getItem('backroomData')) || { 
-  Level: [
-    {
-      title: "Cấp 0 - Sảnh Chờ",
-      content: "Điểm bắt đầu cho tất cả những ai thoát khỏi thực tại. Giấy dán tường màu vàng, đèn huỳnh quang phát ra tiếng ù ù ở tần số không đổi, và khoảng sáu trăm triệu dặm vuông các phòng trống được phân đoạn ngẫu nhiên.",
-      comments: [
-        { name: "Kẻ Lang Thang", text: "Đừng uống nước hạnh nhân ở đây - nó bị nhiễm bẩn!" },
-        { name: "Nhà Thám Hiểm", text: "Tìm thấy lối ra mới gần cánh bắc, dẫn đến Cấp 1" }
-      ],
-      createdBy: "system"
-    }
-  ], 
-  Entity: [], 
-  Other: [] 
-};
-
-function saveData(){ 
-  localStorage.setItem('backroomData', JSON.stringify(data)); 
+// Lấy dữ liệu từ server
+async function fetchData() {
+    const res = await fetch('/api/data');
+    data = await res.json();
+    renderContent(currentTab);
 }
 
-// Render content
+// Lưu dữ liệu lên server
+async function saveData() {
+    await fetch('/api/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+}
+
+// Hiển thị nội dung
 function renderContent(tab){
     currentTab = tab;
     contentDisplay.innerHTML = '';
@@ -190,7 +184,6 @@ function renderContent(tab){
         const section = document.createElement('div');
         section.classList.add('section');
 
-        // Show all comments
         let commentsHTML = '';
         if(item.comments && item.comments.length>0){
             commentsHTML = '<div class="comment-section"><h4>Ghi Chú:</h4>';
@@ -216,20 +209,18 @@ function renderContent(tab){
         contentDisplay.appendChild(section);
     });
 
-    // Delete event
     document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         if (confirm('Bạn có chắc chắn muốn xóa mục này?')) {
           const type = e.target.dataset.type;
           const index = e.target.dataset.index;
           data[type].splice(index, 1);
-          saveData();
+          await saveData();
           renderContent(currentTab);
         }
       });
     });
 
-    // Add comment
     contentDisplay.querySelectorAll('.add-comment-btn').forEach(btn=>{
         btn.addEventListener('click', e=>{
             currentCommentItemIndex = e.target.dataset.index;
@@ -239,18 +230,15 @@ function renderContent(tab){
     });
 }
 
-// Create dropdown toggle
 createBtn.addEventListener('click',(e)=>{
     e.stopPropagation();
     createOptions.style.display = createOptions.style.display==='block'?'none':'block';
 });
 
-// Click outside dropdown
 document.addEventListener('click', () => {
   createOptions.style.display = 'none';
 });
 
-// Choose type
 createOptions.querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click',(e)=>{
         e.stopPropagation();
@@ -264,8 +252,7 @@ createOptions.querySelectorAll('button').forEach(btn=>{
     });
 });
 
-// Save item
-saveItemBtn.addEventListener('click', ()=>{
+saveItemBtn.addEventListener('click', async ()=>{
     if(!itemTitle.value.trim() || !itemContent.value.trim()) {
       alert('Vui lòng điền đầy đủ các trường trước khi lưu');
       return;
@@ -279,13 +266,12 @@ saveItemBtn.addEventListener('click', ()=>{
       createdAt: new Date().toISOString()
     });
 
-    saveData();
+    await saveData();
     createForm.style.display='none';
     renderContent(currentType);
 });
 
-// Submit comment
-submitCommentBtn.addEventListener('click', ()=>{
+submitCommentBtn.addEventListener('click', async ()=>{
     const text = commentTextInput.value.trim();
     if(!text) {
       alert('Vui lòng nhập nội dung bình luận');
@@ -298,22 +284,19 @@ submitCommentBtn.addEventListener('click', ()=>{
       postedAt: new Date().toISOString()
     });
 
-    saveData();
+    await saveData();
     commentModal.style.display='none';
     renderContent(currentTab);
 });
 
-// Cancel comment
 cancelCommentBtn.addEventListener('click', () => {
   commentModal.style.display = 'none';
 });
 
-// Click outside modal
 window.addEventListener('click', e=>{
     if(e.target === commentModal) commentModal.style.display='none';
 });
 
-// Sidebar navigation
 sidebarButtons.forEach(btn=>{ 
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -321,8 +304,7 @@ sidebarButtons.forEach(btn=>{
   }); 
 });
 
-// Initial render
-renderContent(currentTab);
+fetchData();
 </script>
 </body>
 </html>
