@@ -5,11 +5,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(__dirname)); // Cho phép đọc HTML/CSS/JS
+app.use(express.static(__dirname));
 
 const DATA_FILE = path.join(__dirname, "data.json");
 
-// Đọc dữ liệu từ file hoặc tạo file mới
+// Load hoặc tạo file data
 function loadData() {
     if (!fs.existsSync(DATA_FILE)) {
         const initData = { Level: [], Entity: [], Other: [] };
@@ -19,7 +19,7 @@ function loadData() {
     return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
 }
 
-// Lưu dữ liệu vào file
+// Lưu data
 function saveData(data) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
@@ -32,8 +32,11 @@ app.get("/api/data", (req, res) => {
 // API lưu dữ liệu
 app.post("/api/save", (req, res) => {
     const newData = req.body;
-    saveData(newData);
-    res.json({ message: "Lưu thành công" });
+    if (newData && typeof newData === "object") {
+        saveData(newData);
+        return res.json({ message: "Đã lưu dữ liệu" });
+    }
+    res.status(400).json({ message: "Dữ liệu không hợp lệ" });
 });
 
 // Chạy server
