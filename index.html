@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trình Tạo Cấp Độ Backroom</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { transform: translateX(-20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .section, #create-form {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    .sidebar button {
+      animation: slideIn 0.3s ease-out forwards;
+    }
+    .sidebar button:nth-child(1) { animation-delay: 0.1s; }
+    .sidebar button:nth-child(2) { animation-delay: 0.2s; }
+    .sidebar button:nth-child(3) { animation-delay: 0.3s; }
+    
+    /* User info styles */
+    #user-info {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #username-display {
+      color: #ffcc00;
+      font-weight: bold;
+    }
+    #logout-btn {
+      background-color: #ff3333;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .creator-tag {
+      font-size: 0.8em;
+      color: #aaa;
+      margin-bottom: 5px;
+    }
+    .delete-btn {
+      background-color: #ff3333;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- User Info Section -->
+<div id="user-info" style="display: none;">
+  <span id="username-display"></span>
+  <button id="logout-btn">Đăng Xuất</button>
+</div>
+
+<header>
+  <h1>Trình Tạo Cấp Độ Backroom</h1>
+  <div style="position: relative;">
+    <button id="create-btn">Tạo Mới</button>
+    <div id="create-options">
+      <button data-type="Level">Cấp Độ</button>
+      <button data-type="Entity">Thực Thể</button>
+      <button data-type="Other">Khác</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="sidebar" id="sidebar">
+    <button data-tab="Level" class="active">Cấp Độ</button>
+    <button data-tab="Entity">Thực Thể</button>
+    <button data-tab="Other">Khác</button>
+  </div>
+  <div class="main-content" id="main-content">
+    <div class="create-form" id="create-form">
+      <h3 id="form-title">Tạo Mới</h3>
+      <input type="text" id="item-title" placeholder="Tiêu đề (ví dụ: 'Cấp 37 - Phòng Bơi')">
+      <textarea id="item-content" placeholder="Mô tả chi tiết..."></textarea>
+      <button id="save-item">Lưu</button>
+    </div>
+    <div id="content-display"></div>
+  </div>
+</div>
+
+<!-- Modal bình luận -->
+<div id="comment-modal" class="comment-modal">
+  <div class="comment-modal-content">
+    <h3>Thêm Ghi Chú</h3>
+    <textarea id="comment-text" placeholder="Chia sẻ suy nghĩ hoặc thông tin bổ sung..."></textarea>
+    <br>
+    <button id="submit-comment">Đăng Ghi Chú</button>
+    <button id="cancel-comment" style="background: var(--danger); margin-left: 10px;">Hủy</button>
+  </div>
+</div>
+
+<footer>&copy; Create by Ngacon | Tất cả các thực thể dị thường đều được chào đón</footer>
+
+<script>
+// Check login status
+const username = localStorage.getItem('backroom_username');
+if (!username) {
+  window.location.href = 'login.html';
+} else {
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('username-display').textContent = username;
+}
+
+// Logout
+document.getElementById('logout-btn').addEventListener('click', () => {
+  localStorage.removeItem('backroom_username');
+  window.location.href = 'login.html';
+});
+
+const createBtn = document.getElementById('create-btn');
+const createOptions = document.getElementById('create-options');
+const createForm = document.getElementById('create-form');
+const formTitle = document.getElementById('form-title');
+const itemTitle = document.getElementById('item-title');
+const itemContent = document.getElementById('item-content');
+const saveItemBtn = document.getElementById('save-item');
+const contentDisplay = document.getElementById('content-display');
+const sidebarButtons = document.querySelectorAll('.sidebar button');
+
+const commentModal = document.getElementById('comment-modal');
+const commentTextInput = document.getElementById('comment-text');
+const submitCommentBtn = document.getElementById('submit-comment');
+const cancelCommentBtn = document.getElementById('cancel-comment');
+
+let currentTab = 'Level';
+let currentType = null;
+let currentCommentItemIndex = null;
+
+// Data
+const data = JSON.parse(localStorage.getItem('backroomData')) || { 
+  Level: [
+    {
+      title: "Cấp 0 - Sảnh Chờ",
+      content: "Điểm bắt đầu cho tất cả những ai thoát khỏi thực tại. Giấy dán tường màu vàng, đèn huỳnh quang phát ra tiếng ù ù ở tần số không đổi, và khoảng sáu trăm triệu dặm vuông các phòng trống được phân đoạn ngẫu nhiên.",
+      comments: [
+        { name: "Kẻ Lang Thang", text: "Đừng uống nước hạnh nhân ở đây - nó bị nhiễm bẩn!" },
+        { name: "Nhà Thám Hiểm", text: "Tìm thấy lối ra mới gần cánh bắc, dẫn đến Cấp 1" }
+      ],
+      createdBy: "system"
+    }
+  ], 
+  Entity: [], 
+  Other: [] 
+};
+
+function saveData(){ 
+  localStorage.setItem('backroomData', JSON.stringify(data)); 
+}
+
+// Render content
+function renderContent(tab){
+    currentTab = tab;
+    contentDisplay.innerHTML = '';
+
+    sidebarButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    if(data[tab].length === 0) {
+      contentDisplay.innerHTML = `
+        <div class="empty-state">
+          <h3>Không tìm thấy mục ${tab} nào</h3>
+          <p>Tạo ${tab.toLowerCase()} đầu tiên để bắt đầu xây dựng bộ sưu tập backroom của bạn</p>
+        </div>
+      `;
+      return;
+    }
+
+    data[tab].forEach((item,index)=>{
+        const section = document.createElement('div');
+        section.classList.add('section');
+
+        // Show all comments
+        let commentsHTML = '';
+        if(item.comments && item.comments.length>0){
+            commentsHTML = '<div class="comment-section"><h4>Ghi Chú:</h4>';
+            item.comments.forEach(c=>{
+                commentsHTML += `<p><strong>${c.name}:</strong> ${c.text}</p>`;
+            });
+            commentsHTML += '</div>';
+        }
+
+        const creatorTag = item.createdBy ? `<div class="creator-tag">Tạo bởi: ${item.createdBy}</div>` : '';
+        const deleteBtn = item.createdBy === username ? 
+            `<button class="delete-btn" data-type="${tab}" data-index="${index}">Xóa</button>` : '';
+
+        section.innerHTML = `
+          <h2>${item.title}</h2>
+          ${creatorTag}
+          <p>${item.content.replace(/\n/g,'<br>')}</p>
+          ${commentsHTML}
+          <button class="add-comment-btn" data-index="${index}">Thêm Ghi Chú</button>
+          ${deleteBtn}
+        `;
+
+        contentDisplay.appendChild(section);
+    });
+
+    // Delete event
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (confirm('Bạn có chắc chắn muốn xóa mục này?')) {
+          const type = e.target.dataset.type;
+          const index = e.target.dataset.index;
+          data[type].splice(index, 1);
+          saveData();
+          renderContent(currentTab);
+        }
+      });
+    });
+
+    // Add comment
+    contentDisplay.querySelectorAll('.add-comment-btn').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+            currentCommentItemIndex = e.target.dataset.index;
+            commentTextInput.value = '';
+            commentModal.style.display = 'flex';
+        });
+    });
+}
+
+// Create dropdown toggle
+createBtn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    createOptions.style.display = createOptions.style.display==='block'?'none':'block';
+});
+
+// Click outside dropdown
+document.addEventListener('click', () => {
+  createOptions.style.display = 'none';
+});
+
+// Choose type
+createOptions.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        currentType = btn.dataset.type;
+        formTitle.textContent = `Tạo ${currentType}`;
+        createForm.style.display = 'flex';
+        createOptions.style.display='none';
+        itemTitle.value=''; 
+        itemContent.value='';
+        contentDisplay.scrollTop=0;
+    });
+});
+
+// Save item
+saveItemBtn.addEventListener('click', ()=>{
+    if(!itemTitle.value.trim() || !itemContent.value.trim()) {
+      alert('Vui lòng điền đầy đủ các trường trước khi lưu');
+      return;
+    }
+
+    data[currentType].unshift({
+      title: itemTitle.value.trim(),
+      content: itemContent.value.trim(),
+      comments: [],
+      createdBy: username,
+      createdAt: new Date().toISOString()
+    });
+
+    saveData();
+    createForm.style.display='none';
+    renderContent(currentType);
+});
+
+// Submit comment
+submitCommentBtn.addEventListener('click', ()=>{
+    const text = commentTextInput.value.trim();
+    if(!text) {
+      alert('Vui lòng nhập nội dung bình luận');
+      return;
+    }
+
+    data[currentTab][currentCommentItemIndex].comments.push({
+      name: username,
+      text,
+      postedAt: new Date().toISOString()
+    });
+
+    saveData();
+    commentModal.style.display='none';
+    renderContent(currentTab);
+});
+
+// Cancel comment
+cancelCommentBtn.addEventListener('click', () => {
+  commentModal.style.display = 'none';
+});
+
+// Click outside modal
+window.addEventListener('click', e=>{
+    if(e.target === commentModal) commentModal.style.display='none';
+});
+
+// Sidebar navigation
+sidebarButtons.forEach(btn=>{ 
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    renderContent(btn.dataset.tab); 
+  }); 
+});
+
+// Initial render
+renderContent(currentTab);
+</script>
+</body>
+</html>

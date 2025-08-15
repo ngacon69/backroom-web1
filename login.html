@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập - Trình Tạo Cấp Độ Backroom</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .auth-container {
+      background-color: #2d2d2d;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      width: 350px;
+    }
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 1.5rem;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      background-color: #333;
+      border: none;
+      color: white;
+      font-weight: bold;
+    }
+    .auth-tab.active {
+      background-color: #ffcc00;
+      color: black;
+    }
+    .auth-form {
+      display: none;
+    }
+    .auth-form.active {
+      display: block;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      background-color: #333;
+      border: 1px solid #444;
+      color: white;
+      border-radius: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #ffcc00;
+      color: black;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+    }
+    .error-message {
+      color: #ff3333;
+      margin-top: 1rem;
+    }
+    h2 {
+      margin-top: 0;
+      color: #ffcc00;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="login-tab">Đăng Nhập</button>
+      <button class="auth-tab" id="register-tab">Đăng Ký</button>
+    </div>
+    
+    <form class="auth-form active" id="login-form" onsubmit="return false;">
+      <h2>Đăng Nhập</h2>
+      <input type="text" id="login-username" placeholder="Tên đăng nhập" required>
+      <input type="password" id="login-password" placeholder="Mật khẩu" required>
+      <button id="login-btn">Đăng Nhập</button>
+      <div id="login-error" class="error-message"></div>
+    </form>
+    
+    <form class="auth-form" id="register-form" onsubmit="return false;">
+      <h2>Đăng Ký</h2>
+      <input type="text" id="register-username" placeholder="Tên đăng nhập" required>
+      <input type="password" id="register-password" placeholder="Mật khẩu" required>
+      <input type="password" id="register-confirm" placeholder="Xác nhận mật khẩu" required>
+      <button id="register-btn">Đăng Ký</button>
+      <div id="register-error" class="error-message"></div>
+    </form>
+  </div>
+
+  <script>
+    // Khởi tạo tài khoản trong localStorage nếu chưa có
+    if (!localStorage.getItem('backroomAccounts')) {
+      localStorage.setItem('backroomAccounts', JSON.stringify({
+        'admin': {
+          password: 'admin123', // Trong thực tế nên mã hóa mật khẩu
+          createdAt: new Date().toISOString()
+        }
+      }));
+    }
+
+    // Lấy danh sách tài khoản
+    const accounts = JSON.parse(localStorage.getItem('backroomAccounts'));
+
+    // Tab switching
+    document.getElementById('login-tab').addEventListener('click', () => {
+      document.getElementById('login-tab').classList.add('active');
+      document.getElementById('register-tab').classList.remove('active');
+      document.getElementById('login-form').classList.add('active');
+      document.getElementById('register-form').classList.remove('active');
+      document.getElementById('login-error').textContent = '';
+      document.getElementById('register-error').textContent = '';
+    });
+
+    document.getElementById('register-tab').addEventListener('click', () => {
+      document.getElementById('register-tab').classList.add('active');
+      document.getElementById('login-tab').classList.remove('active');
+      document.getElementById('register-form').classList.add('active');
+      document.getElementById('login-form').classList.remove('active');
+      document.getElementById('login-error').textContent = '';
+      document.getElementById('register-error').textContent = '';
+    });
+
+    // Login function
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      
+      if (!username || !password) {
+        document.getElementById('login-error').textContent = 'Vui lòng nhập đầy đủ thông tin';
+        return;
+      }
+
+      if (!accounts[username]) {
+        document.getElementById('login-error').textContent = 'Tài khoản không tồn tại';
+        return;
+      }
+
+      if (accounts[username].password !== password) {
+        document.getElementById('login-error').textContent = 'Mật khẩu không đúng';
+        return;
+      }
+
+      localStorage.setItem('backroom_username', username);
+      localStorage.setItem('backroom_loggedIn', 'true');
+      window.location.href = 'index.html';
+    });
+
+    // Register function
+    document.getElementById('register-btn').addEventListener('click', () => {
+      const username = document.getElementById('register-username').value.trim();
+      const password = document.getElementById('register-password').value.trim();
+      const confirm = document.getElementById('register-confirm').value.trim();
+      
+      if (!username || !password || !confirm) {
+        document.getElementById('register-error').textContent = 'Vui lòng nhập đầy đủ thông tin';
+        return;
+      }
+
+      if (password !== confirm) {
+        document.getElementById('register-error').textContent = 'Mật khẩu không khớp';
+        return;
+      }
+
+      if (accounts[username]) {
+        document.getElementById('register-error').textContent = 'Tài khoản đã tồn tại';
+        return;
+      }
+
+      // Thêm tài khoản mới
+      accounts[username] = {
+        password: password, // Lưu ý: Trong thực tế cần mã hóa mật khẩu
+        createdAt: new Date().toISOString()
+      };
+
+      // Lưu vào localStorage
+      localStorage.setItem('backroomAccounts', JSON.stringify(accounts));
+      
+      alert('Đăng ký thành công! Vui lòng đăng nhập');
+      document.getElementById('login-tab').click();
+      document.getElementById('login-username').value = username;
+      document.getElementById('login-password').value = '';
+      document.getElementById('register-error').textContent = '';
+    });
+
+    // Submit forms on Enter key
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          if (document.getElementById('login-form').classList.contains('active')) {
+            document.getElementById('login-btn').click();
+          } else {
+            document.getElementById('register-btn').click();
+          }
+        }
+      });
+    });
+
+    // Tự động chuyển hướng nếu đã đăng nhập
+    if (localStorage.getItem('backroom_loggedIn') === 'true') {
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
